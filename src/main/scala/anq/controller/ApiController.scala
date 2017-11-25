@@ -1,25 +1,34 @@
 package anq.controller
 
-import anq.stack.JsonApiStack
+import anq.model.Survey
+import anq.stack.{DatabaseSessionSupport, JsonApiStack}
+import org.scalatra.swagger._
 
-case class Survey(id: Int, content: String)
+class ApiController(implicit val swagger: Swagger)
+  extends JsonApiStack
+    with DatabaseSessionSupport
+    with SwaggerSupport {
 
-object SurveyData {
-  var all = List(
-    Survey(1, "Foo"),
-    Survey(2, "Bar"),
-  )
-}
+  protected val applicationDescription = "The flowershop API. It exposes operations for browsing and searching lists of flowers, and retrieving single flowers."
 
-class ApiController extends JsonApiStack {
+  val getSurveys: SwaggerSupportSyntax.OperationBuilder =
+    (apiOperation[List[Survey]]("getSurveys")
+      summary "Get all surveys"
+      description "Get all surveys")
 
-  get("/surveys") {
-    SurveyData.all
+  val getSurvey: SwaggerSupportSyntax.OperationBuilder =
+    (apiOperation[Survey]("getSurvey")
+      summary "Get specific survey"
+      description "Get specific survey"
+      parameters pathParam[String]("id").description("Survey ID"))
+
+  get("/surveys", operation(getSurveys)) {
+    Survey.findAll()
   }
 
-  get("/surveys/:id"){
-    val id = params.getAs[Int]("id").getOrElse("")
-    SurveyData.all.filter(_.id == id)
+  get("/surveys/:id", operation(getSurvey)) {
+    val id = params.getAs[Int]("id").getOrElse(-1)
+    Survey.findById(id)
   }
 
 }
